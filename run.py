@@ -75,6 +75,7 @@ parser.add_argument('--num_image_per_class', default=5, type=int)
 
 parser.add_argument('--epochs', default=40, type=int)
 parser.add_argument('--iter_per_epoch', type=int, default=100)
+parser.add_argument('--recall', default=[1], type=int, nargs='+')
 
 parser.add_argument('--seed', default=random.randint(1, 1000), type=int)
 parser.add_argument('--data', default='data')
@@ -146,7 +147,7 @@ def train(net, loader, ep):
 
     net.train()
     loss_all, norm_all = [], []
-    train_iter = tqdm(loader)
+    train_iter = tqdm(loader, ncols=80)
     for images, labels in train_iter:
         images, labels = images.cuda(), labels.cuda()
         embedding = net(images)
@@ -161,9 +162,9 @@ def train(net, loader, ep):
 
 
 def eval(net, loader, ep):
-    K = [1, 2, 4, 8]
+    K = opts.recall
     net.eval()
-    test_iter = tqdm(loader)
+    test_iter = tqdm(loader, ncols=80)
     embeddings_all, labels_all = [], []
 
     test_iter.set_description("[Eval][Epoch %d]" % ep)
@@ -185,6 +186,7 @@ def eval(net, loader, ep):
 
 
 if opts.mode == "eval":
+    eval(model, loader_train_eval, 0)
     eval(model, loader_eval, 0)
 else:
     train_recall = eval(model, loader_train_eval, 0)

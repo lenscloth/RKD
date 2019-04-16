@@ -186,6 +186,7 @@ def train(loader, ep):
             t_b1, t_b2, t_b3, t_b4, t_pool, t_e = teacher(teacher_normalize(images), True)
 
         if isinstance(student.base, backbone.GoogleNet):
+            assert (opts.at_ratio == 0), "AttentionTransfer cannot be applied on GoogleNet at current implementation."
             e = student(student_normalize(images))
             at_loss = torch.zeros(1, device=e.device)
         else:

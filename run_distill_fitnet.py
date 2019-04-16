@@ -29,17 +29,13 @@ parser.add_argument('--dataset',
                     action=LookupChoices)
 
 parser.add_argument('--base',
-                    choices=dict(googlenet=backbone.GoogleNet,
-                                 inception_v1bn=backbone.InceptionV1BN,
-                                 resnet18=backbone.ResNet18,
+                    choices=dict(resnet18=backbone.ResNet18,
                                  resnet50=backbone.ResNet50),
                     default=backbone.ResNet50,
                     action=LookupChoices)
 
 parser.add_argument('--teacher_base',
-                    choices=dict(googlenet=backbone.GoogleNet,
-                                 inception_v1bn=backbone.InceptionV1BN,
-                                 resnet18=backbone.ResNet18,
+                    choices=dict(resnet18=backbone.ResNet18,
                                  resnet50=backbone.ResNet50),
                     default=backbone.ResNet50,
                     action=LookupChoices)
