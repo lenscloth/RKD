@@ -1,6 +1,6 @@
 # Relational Knowledge Distillation
 
-Implementation of Relational Knowledge Distillation (CVPR 2019, Under review)\
+Implementation of Relational Knowledge Distillation, CVPR 2019\
 This repository contains source code of experiments for metric learning.
 
 ## Quick Start
