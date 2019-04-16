@@ -1,7 +1,8 @@
 # Relational Knowledge Distillation
 
-Implementation of Relational Knowledge Distillation, CVPR 2019\
+Implementation of [Relational Knowledge Distillation](https://arxiv.org/abs/1904.05068?context=cs.LG), CVPR 2019\
 This repository contains source code of experiments for metric learning.
+
 
 ## Quick Start
 
@@ -55,5 +56,6 @@ python run.py --mode eval \
 
 ### Note
 * Hyper-parameters that used for experiments in the paper are specified at scripts in ```exmples/```.
-
-
+* Heavy teacher network (ResNet50 w/ 512 dimension) requires more than 12GB of GPU memory if batch size is 128,  
+  Thus, you might have to reduce the batch size. (The experiments in the paper were conducted on P40 with 24GB of gpu memory. 
+)

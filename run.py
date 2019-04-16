@@ -70,7 +70,7 @@ parser.add_argument('--lr', default=1e-5, type=float)
 parser.add_argument('--lr_decay_epochs', type=int, default=[25, 30, 35], nargs='+')
 parser.add_argument('--lr_decay_gamma', default=0.5, type=float)
 
-parser.add_argument('--batch', default=128, type=int)
+parser.add_argument('--batch', default=64, type=int)
 parser.add_argument('--num_image_per_class', default=5, type=int)
 
 parser.add_argument('--epochs', default=40, type=int)

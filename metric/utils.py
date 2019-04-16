@@ -17,12 +17,7 @@ def pdist(e, squared=False, eps=1e-12):
 
 
 def recall(embeddings, labels, K=[]):
-    """
-    Multiply by 10 for numerical stability.
-    It does not affect recall.
-    """
-    D = pdist(embeddings * 10, squared=True)
-
+    D = pdist(embeddings, squared=True)
     knn_inds = D.topk(1 + max(K), dim=1, largest=False, sorted=True)[1][:, 1:]
 
     """
