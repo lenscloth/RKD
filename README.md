@@ -53,7 +53,7 @@ python run.py --mode eval \
 * Pytorch 1.0
 * tqdm (pip install tqdm)
 
-
 ### Note
 * Hyper-parameters that used for experiments in the paper are specified at scripts in ```exmples/```.
-* Do not use distance weighted sampling ( --sample distance ) when embedding is not l2 normalized. As the sampling method assume that embedding is normalized.
+
+
