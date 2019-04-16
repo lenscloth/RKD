@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 from metric.utils import recall
 from metric.batchsampler import NPairs
-from metric.loss import HardDarkRank, RkdDistance, RKdAngle, L2Triplet, AttentionTransfer
+from metric.loss import HardDarkRank, RkdDistance, RKdAngle, L2Triplet, FitNet
 from model.embedding import LinearEmbedding
 
 
@@ -45,6 +45,7 @@ parser.add_argument('--teacher_base',
                     action=LookupChoices)
 
 parser.add_argument('--triplet_ratio', default=0, type=float)
+
 parser.add_argument('--dist_ratio', default=0, type=float)
 parser.add_argument('--angle_ratio', default=0, type=float)
 
@@ -52,7 +53,7 @@ parser.add_argument('--dark_ratio', default=0, type=float)
 parser.add_argument('--dark_alpha', default=2, type=float)
 parser.add_argument('--dark_beta', default=3, type=float)
 
-parser.add_argument('--at_ratio', default=0, type=float)
+parser.add_argument('--fitnet_ratio', default=1, type=float)
 
 parser.add_argument('--triplet_sample',
                     choices=dict(random=pair.RandomNegative,
@@ -60,7 +61,7 @@ parser.add_argument('--triplet_sample',
                                  all=pair.AllPairs,
                                  semihard=pair.SemiHardNegative,
                                  distance=pair.DistanceWeighted),
-                    default=pair.DistanceWeighted,
+                    default=pair.AllPairs,
                     action=LookupChoices)
 
 parser.add_argument('--triplet_margin', type=float, default=0.2)
@@ -71,7 +72,7 @@ parser.add_argument('--teacher_load', default=None, required=True)
 parser.add_argument('--teacher_l2normalize', choices=['true', 'false'], default='true')
 parser.add_argument('--teacher_embedding_size', default=128, type=int)
 
-parser.add_argument('--lr', default=1e-4, type=float)
+parser.add_argument('--lr', default=1e-5, type=float)
 parser.add_argument('--data', default='data')
 parser.add_argument('--epochs', default=80, type=int)
 parser.add_argument('--batch', default=128, type=int)
@@ -79,7 +80,6 @@ parser.add_argument('--iter_per_epoch', default=100, type=int)
 parser.add_argument('--lr_decay_epochs', type=int, default=[40, 60], nargs='+')
 parser.add_argument('--lr_decay_gamma', type=float, default=0.1)
 parser.add_argument('--save_dir', default=None)
-parser.add_argument('--load', default=None)
 
 opts = parser.parse_args()
 student_base = opts.base(pretrained=True)
@@ -143,10 +143,6 @@ student = LinearEmbedding(student_base,
                           embedding_size=opts.embedding_size,
                           normalize=opts.l2normalize == 'true')
 
-if opts.load is not None:
-    student.load_state_dict(torch.load(opts.load))
-    print("Loaded Model from %s" % opts.load)
-
 teacher = LinearEmbedding(teacher_base,
                           output_size=teacher_base.output_size,
                           embedding_size=opts.teacher_embedding_size,
@@ -156,6 +152,7 @@ teacher.load_state_dict(torch.load(opts.teacher_load))
 student = student.cuda()
 teacher = teacher.cuda()
 
+
 optimizer = optim.Adam(student.parameters(), lr=opts.lr, weight_decay=1e-5)
 lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=opts.lr_decay_epochs, gamma=opts.lr_decay_gamma)
 
@@ -163,7 +160,36 @@ dist_criterion = RkdDistance()
 angle_criterion = RKdAngle()
 dark_criterion = HardDarkRank(alpha=opts.dark_alpha, beta=opts.dark_beta)
 triplet_criterion = L2Triplet(sampler=opts.triplet_sample(), margin=opts.triplet_margin)
-at_criterion = AttentionTransfer()
+fitnet_criterion = [FitNet(64, 256), FitNet(128, 512), FitNet(256, 1024), FitNet(512, 2048), FitNet(opts.embedding_size, 512)]
+[f.cuda() for f in fitnet_criterion]
+
+
+def train_fitnet(loader, ep):
+    lr_scheduler.step()
+    student.train()
+    teacher.eval()
+    loss_all = []
+
+    train_iter = tqdm(loader)
+    for images, labels in train_iter:
+        images, labels = images.cuda(), labels.cuda()
+
+        b1, b2, b3, b4, pool, e = student(student_normalize(images), True)
+        with torch.no_grad():
+            t_b1, t_b2, t_b3, t_b4, t_pool, t_e = teacher(teacher_normalize(images), True)
+
+        loss = opts.fitnet_ratio * (fitnet_criterion[1](b2, t_b2) +
+                                    fitnet_criterion[2](b3, t_b3) +
+                                    fitnet_criterion[3](b4, t_b4) +
+                                    fitnet_criterion[4](e, t_e))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        loss_all.append(loss.item())
+
+        train_iter.set_description("[Train][Epoch %d] FitNet: %.5f" % (ep, loss.item()))
+    print('[Epoch %d] Loss: %.5f \n' % (ep, torch.Tensor(loss_all).mean()))
 
 
 def train(loader, ep):
@@ -175,29 +201,22 @@ def train(loader, ep):
     angle_loss_all = []
     dark_loss_all = []
     triplet_loss_all = []
-    at_loss_all = []
     loss_all = []
 
     train_iter = tqdm(loader)
     for images, labels in train_iter:
         images, labels = images.cuda(), labels.cuda()
 
+        e = student(student_normalize(images))
         with torch.no_grad():
-            t_b1, t_b2, t_b3, t_b4, t_pool, t_e = teacher(teacher_normalize(images), True)
-
-        if isinstance(student.base, backbone.GoogleNet):
-            e = student(student_normalize(images))
-            at_loss = torch.zeros(1, device=e.device)
-        else:
-            b1, b2, b3, b4, pool, e = student(student_normalize(images), True)
-            at_loss = opts.at_ratio * (at_criterion(b2, t_b2) + at_criterion(b3, t_b3) + at_criterion(b4, t_b4))
+            t_e = teacher(teacher_normalize(images))
 
         triplet_loss = opts.triplet_ratio * triplet_criterion(e, labels)
         dist_loss = opts.dist_ratio * dist_criterion(e, t_e)
         angle_loss = opts.angle_ratio * angle_criterion(e, t_e)
         dark_loss = opts.dark_ratio * dark_criterion(e, t_e)
 
-        loss = triplet_loss + dist_loss + angle_loss + dark_loss + at_loss
+        loss = triplet_loss + dist_loss + angle_loss + dark_loss
 
         optimizer.zero_grad()
         loss.backward()
@@ -207,15 +226,13 @@ def train(loader, ep):
         dist_loss_all.append(dist_loss.item())
         angle_loss_all.append(angle_loss.item())
         dark_loss_all.append(dark_loss.item())
-        at_loss_all.append(at_loss.item())
         loss_all.append(loss.item())
 
-        train_iter.set_description("[Train][Epoch %d] Triplet: %.5f, Dist: %.5f, Angle: %.5f, Dark: %5f, At: %5f" %
-                                   (ep, triplet_loss.item(), dist_loss.item(), angle_loss.item(), dark_loss.item(), at_loss.item()))
-    print('[Epoch %d] Loss: %.5f, Triplet: %.5f, Dist: %.5f, Angle: %.5f, Dark: %.5f At: %.5f\n' %\
+        train_iter.set_description("[Train][Epoch %d] Triplet: %.5f, Dist: %.5f, Angle: %.5f, Dark: %5f" %
+                                   (ep, triplet_loss.item(), dist_loss.item(), angle_loss.item(), dark_loss.item()))
+    print('[Epoch %d] Loss: %.5f, Triplet: %.5f, Dist: %.5f, Angle: %.5f, Dark: %.5f \n' %\
           (ep, torch.Tensor(loss_all).mean(), torch.Tensor(triplet_loss_all).mean(),
-           torch.Tensor(dist_loss_all).mean(), torch.Tensor(angle_loss_all).mean(), torch.Tensor(dark_loss_all).mean(),
-           torch.Tensor(at_loss_all).mean()))
+           torch.Tensor(dist_loss_all).mean(), torch.Tensor(angle_loss_all).mean(), torch.Tensor(dark_loss_all).mean()))
 
 
 def eval(net, normalize, loader, ep):
@@ -247,7 +264,7 @@ best_train_rec = eval(student, student_normalize, loader_train_eval, 0)
 best_val_rec = eval(student, student_normalize, loader_eval, 0)
 
 for epoch in range(1, opts.epochs+1):
-    train(loader_train_sample, epoch)
+    train_fitnet(loader_train_sample, epoch)
     train_recall = eval(student, student_normalize, loader_train_eval, epoch)
     val_recall = eval(student, student_normalize, loader_eval, epoch)
 

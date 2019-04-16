@@ -11,10 +11,19 @@ class LinearEmbedding(nn.Module):
         self.linear = nn.Linear(output_size, embedding_size)
         self.normalize = normalize
 
-    def forward(self, input):
-        feat = self.base(input).view(input.size(0), -1)
-        embed = self.linear(feat)
+    def forward(self, x, get_ha=False):
+        if get_ha:
+            b1, b2, b3, b4, pool = self.base(x, True)
+        else:
+            pool = self.base(x)
+
+        pool = pool.view(x.size(0), -1)
+        embedding = self.linear(pool)
 
         if self.normalize:
-            embed = F.normalize(embed, p=2, dim=1)
-        return embed
+            embedding = F.normalize(embedding, p=2, dim=1)
+
+        if get_ha:
+            return b1, b2, b3, b4, pool, embedding
+
+        return embedding

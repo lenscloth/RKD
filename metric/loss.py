@@ -88,6 +88,33 @@ class HardDarkRank(nn.Module):
         return loss
 
 
+class FitNet(nn.Module):
+    def __init__(self, in_feature, out_feature):
+        super().__init__()
+        self.in_feature = in_feature
+        self.out_feature = out_feature
+
+        self.transform = nn.Conv2d(in_feature, out_feature, 1, bias=False)
+        self.transform.weight.data.uniform_(-0.005, 0.005)
+
+    def forward(self, student, teacher):
+        if student.dim() == 2:
+            student = student.unsqueeze(2).unsqueeze(3)
+            teacher = teacher.unsqueeze(2).unsqueeze(3)
+
+        return (self.transform(student) - teacher).pow(2).mean()
+
+
+class AttentionTransfer(nn.Module):
+    def forward(self, student, teacher):
+        s_attention = F.normalize(student.pow(2).mean(1).view(student.size(0), -1))
+
+        with torch.no_grad():
+            t_attention = F.normalize(teacher.pow(2).mean(1).view(teacher.size(0), -1))
+
+        return (s_attention - t_attention).pow(2).mean()
+
+
 class RKdAngle(nn.Module):
     def forward(self, student, teacher):
         # N x C

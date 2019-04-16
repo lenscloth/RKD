@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from metric.utils import pdist
 
@@ -111,6 +112,7 @@ class DistanceWeighted(_Sampler):
 
     def forward(self, embeddings, labels):
         with torch.no_grad():
+            embeddings = F.normalize(embeddings, dim=1, p=2)
             pos_mask, neg_mask = pos_neg_mask(labels)
             pos_pair_idx = pos_mask.nonzero()
             anchor_idx = pos_pair_idx[:, 0]
