@@ -1,6 +1,6 @@
 # Relational Knowledge Distillation
 
-Implementation of [Relational Knowledge Distillation](https://arxiv.org/abs/1904.05068?context=cs.LG), CVPR 2019\
+Official implementation of [Relational Knowledge Distillation](https://arxiv.org/abs/1904.05068?context=cs.LG), CVPR 2019\
 This repository contains source code of experiments for metric learning.
 
 
