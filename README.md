@@ -10,29 +10,29 @@ This repository contains source code of experiments for metric learning.
 python run.py --help    
 python run_distill.py --help
 
-# Train a teacher embedding network of googlnet (d=128)
+# Train a teacher embedding network of resnet50 (d=512)
 # using triplet loss (margin=0.2) with distance weighted sampling.
 python run.py --mode train \ 
                --dataset cub200 \
-               --base googlenet \
+               --base resnet50 \
                --sample distance \ 
                --margin 0.2 \ 
-               --embedding_size 128 \
+               --embedding_size 512 \
                --save_dir teacher
 
 # Evaluate the teacher embedding network
 python run.py --mode eval \ 
                --dataset cub200 \
-               --base googlenet \
-               --embedding_size 128 \
+               --base resnet50 \
+               --embedding_size 512 \
                --load teacher/best.pth 
 
 # Distill the teacher to student embedding network
 python run_distill.py --dataset cub200 \
                       --base googlnet \
                       --embedding_size 64 \
-                      --teacher_base googlenet \
-                      --teacher_embedding_size 128 \
+                      --teacher_base resnet50 \
+                      --teacher_embedding_size 512 \
                       --teacher_load teacher/best.pth \
                       --dist_ratio 1  \
                       --angle_ratio 2 \
