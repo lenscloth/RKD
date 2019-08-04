@@ -59,3 +59,16 @@ python run.py --mode eval \
 * Heavy teacher network (ResNet50 w/ 512 dimension) requires more than 12GB of GPU memory if batch size is 128.  
   Thus, you might have to reduce the batch size. (The experiments in the paper were conducted on P40 with 24GB of gpu memory. 
 )
+
+## Citation
+In case of using this source code for your research, please cite our paper.
+
+```
+@inproceedings{park2019relational,
+  title={Relational Knowledge Distillation},
+  author={Park, Wonpyo and Kim, Dongju and Lu, Yan and Cho, Minsu},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  pages={3967--3976},
+  year={2019}
+}
+```
