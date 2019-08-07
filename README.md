@@ -53,6 +53,8 @@ python run.py --mode eval \
 * Python 3.6
 * Pytorch 1.0
 * tqdm (pip install tqdm)
+* h5py (pip install h5py)
+* scipy (pip install scipy)
 
 ### Note
 * Hyper-parameters that used for experiments in the paper are specified at scripts in ```exmples/```.
