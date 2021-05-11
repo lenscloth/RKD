@@ -29,8 +29,9 @@ python run.py --mode eval \
 
 # Distill the teacher to student embedding network
 python run_distill.py --dataset cub200 \
-                      --base googlnet \
+                      --base resnet18 \
                       --embedding_size 64 \
+                      --l2normalize false \
                       --teacher_base resnet50 \
                       --teacher_embedding_size 512 \
                       --teacher_load teacher/best.pth \
