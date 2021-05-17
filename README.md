@@ -42,7 +42,7 @@ python run_distill.py --dataset cub200 \
 # Distill the trained model to student network
 python run.py --mode eval \ 
                --dataset cub200 \
-               --base googlenet \
+               --base resnet18 \
                --embedding_size 64 \
                --load student/best.pth 
             
