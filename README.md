@@ -43,6 +43,7 @@ python run_distill.py --dataset cub200 \
 python run.py --mode eval \ 
                --dataset cub200 \
                --base resnet18 \
+               --l2normalize false \
                --embedding_size 64 \
                --load student/best.pth 
             
