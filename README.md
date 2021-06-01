@@ -39,7 +39,7 @@ python run_distill.py --dataset cub200 \
                       --angle_ratio 2 \
                       --save_dir student
                       
-# Distill the trained model to student network
+# Evaluate the trained model to student network
 python run.py --mode eval \ 
                --dataset cub200 \
                --base resnet18 \
@@ -59,7 +59,7 @@ python run.py --mode eval \
 * scipy (pip install scipy)
 
 ### Note
-* Hyper-parameters that used for experiments in the paper are specified at scripts in ```exmples/```.
+* Hyper-parameters that used for experiments in the paper are specified at scripts in ```examples/```.
 * Heavy teacher network (ResNet50 w/ 512 dimension) requires more than 12GB of GPU memory if batch size is 128.  
   Thus, you might have to reduce the batch size. (The experiments in the paper were conducted on P40 with 24GB of gpu memory. 
 )
